@@ -1,0 +1,78 @@
+MLProject
+Ashok
+
+Sunday, October 26, 2014
+
+The report aims to identify the data from accelerometers placed on the belt, forearm, arm, and dumbell of six participants to predict how well they were doing the exercise in terms of the classification in the data.
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement. A group of enthusiasts took measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.
+
+library(caret)
+## Warning: package 'caret' was built under R version 3.1.1
+## Loading required package: lattice
+## Loading required package: ggplot2
+## Warning: package 'ggplot2' was built under R version 3.1.1
+library(kernlab)
+## Warning: package 'kernlab' was built under R version 3.1.1
+library(randomForest)
+## Warning: package 'randomForest' was built under R version 3.1.1
+## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.
+library(corrplot)
+## Warning: package 'corrplot' was built under R version 3.1.1
+pml_train <- read.csv(file.choose(),na.strings= c("NA",""))
+dim(pml_train)
+## [1] 19622   160
+Preprocessing and cleaning data Preprocessing the data & cleaning the data by removing names, timestamp etc.Imported pml-training.csv into workspace and assigned those values to trainRawData variable. In further steps, I cleaned data by removing columns with NA’s from dataset. This is done to reduce the number of insignificant columns thereby improving the processing time and accuracy.
+
+Partitioning the training & test data
+
+To make efficient model, we need to train our model with 70% of available test data. Once model is prepared, it is always good to test with rest 30% data to cross validate the predicted values against already existing values.
+
+pml_Train_part<- createDataPartition(y = pml_train_clean$classe, p = 0.7, list = FALSE)
+training <- pml_train_clean[pml_Train_part, ]
+crossval <- pml_train_clean[-pml_Train_part, ]
+fit a model to predict the classe I have used Random Forest as algorithm to get highest accuracy with available 46 predictor variables. To control the training process, and Cross Validation as method and parallel processing also set to true.
+
+model <- randomForest(classe ~ ., data = training)
+crossvalidate the model using the remaining 30% of data
+predictCrossVal <- predict(model, crossval)
+confusionMatrix(crossval$classe, predictCrossVal)
+## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1674    0    0    0    0
+##          B    0 1139    0    0    0
+##          C    0    1 1025    0    0
+##          D    0    0    0  964    0
+##          E    0    0    0    0 1082
+## 
+## Overall Statistics
+##                                     
+##                Accuracy : 1         
+##                  95% CI : (0.999, 1)
+##     No Information Rate : 0.284     
+##     P-Value [Acc > NIR] : <2e-16    
+##                                     
+##                   Kappa : 1         
+##  Mcnemar's Test P-Value : NA        
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             1.000    0.999    1.000    1.000    1.000
+## Specificity             1.000    1.000    1.000    1.000    1.000
+## Pos Pred Value          1.000    1.000    0.999    1.000    1.000
+## Neg Pred Value          1.000    1.000    1.000    1.000    1.000
+## Prevalence              0.284    0.194    0.174    0.164    0.184
+## Detection Rate          0.284    0.194    0.174    0.164    0.184
+## Detection Prevalence    0.284    0.194    0.174    0.164    0.184
+## Balanced Accuracy       1.000    1.000    1.000    1.000    1.000
+Validating Test data
+As we have partition the data into two sets, we have trained our model with training data. We have out model ready and we have to used rest 30% of data to test the model.
+
+pml_test <- read.csv(file.choose(), na.strings= c("NA",""," "))
+pml_test_NAs <- apply(pml_test, 2, function(x) {sum(is.na(x))})
+pml_test_clean <- pml_test[,which(pml_test_NAs == 0)]
+pml_test_clean <- pml_test_clean[8:length(pml_test_clean)]
